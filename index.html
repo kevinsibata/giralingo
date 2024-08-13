@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GiraLingo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #fffbea; /* Cor de fundo clara e suave */
+            color: #4a4a4a; /* Texto em tom neutro */
+            overflow-x: hidden;
+        }
+        .container {
+            margin-bottom: 50px;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #fffae6; /* Fundo suave relacionado a girassol */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        h1 {
+            color: #ffcc00; /* Título em amarelo girassol */
+            text-align: center;
+        }
+        h3 {
+            color: #ffcc00; /* Subtítulos em amarelo girassol */
+        }
+        .fragments, .selected {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+            min-height: 50px;
+        }
+        .fragment, .selected-fragment {
+            background-color: #fff5cc; /* Fundo suave e quente */
+            border: 2px solid #ffc107; /* Borda amarela para contraste */
+            padding: 10px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            color: #4a4a4a;
+        }
+        .fragment:hover, .selected-fragment:hover {
+            background-color: #ffe066; /* Amarelo claro ao passar o mouse */
+        }
+        .selected-fragment {
+            background-color: #ffe066; /* Destaque nos fragmentos selecionados */
+        }
+        button {
+            padding: 10px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            margin-right: 10px; /* Espaçamento entre os botões */
+        }
+        button#verify {
+            background-color: #ffcc00; /* Botões em amarelo girassol */
+            color: #fff;
+            border: none;
+        }
+        button#verify:hover {
+            background-color: #e6b800; /* Tom mais escuro ao passar o mouse */
+        }
+        button#reset {
+            background-color: #e0e0e0; /* Botão reiniciar mais discreto */
+            color: #4a4a4a;
+            border: none;
+        }
+        button#reset:hover {
+            background-color: #c8c8c8; /* Tom mais escuro ao passar o mouse */
+        }
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.3s forwards;
+        }
+        .fade-out {
+            opacity: 1;
+            transform: translateY(0);
+            animation: fadeOut 0.3s forwards;
+        }
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
+        /* Animação de comemoração */
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 1000;
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #ffcc00; /* Confetes amarelos */
+            animation: fall 3s ease-in-out infinite, spin 3s linear infinite;
+        }
+        .confetti:nth-child(2n) {
+            background-color: #ffee99; /* Confetes em tom claro */
+        }
+        .confetti:nth-child(3n) {
+            background-color: #ffd633; /* Confetes em amarelo girassol */
+        }
+        .confetti:nth-child(4n) {
+            background-color: #ffbf00; /* Confetes em tom mais escuro */
+        }
+        @keyframes fall {
+            0% {
+                top: -10%;
+                transform: translateX(0);
+            }
+            100% {
+                top: 110%;
+                transform: translateX(100px);
+            }
+        }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>GiraLingo</h1>
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+
+    <script type="text/babel">
+        // Função para embaralhar os fragmentos
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Componente de confetes
+        function Confetti() {
+            const confettiArray = new Array(100).fill(0);
+            return (
+                <div className="celebration">
+                    {confettiArray.map((_, index) => (
+                        <div
+                            key={index}
+                            className="confetti"
+                            style={{
+                                left: `${Math.random() * 100}%`,
+                                animationDelay: `${Math.random() * 2}s`,
+                                transform: `rotate(${Math.random() * 360}deg)`,
+                            }}
+                        ></div>
+                    ))}
+                </div>
+            );
+        }
+
+        const exercises = [
+            {
+                id: 1,
+                question: "Você está baixando um filme e o tempo de download depende do tamanho do arquivo. Se um filme de 200 MB leva 5 minutos para baixar, quanto tempo levará para baixar um filme de 500 MB?",
+                fragments: [
+                    "Se 200 MB levam 5 minutos,",
+                    "cada 1 MB corresponde a 0,025 minutos.",
+                    "Multiplicando esse valor pelo tamanho do novo arquivo,",
+                    "encontramos que o filme de 500 MB",
+                    "levará 12,5 minutos",
+                    "para ser baixado."
+                ]
+            },
+            {
+                id: 2,
+                question: "Você está enchendo balões para uma festa e a quantidade de ar necessária muda conforme o número de balões. Se 1 litro de ar enche 2 balões, quantos litros de ar são necessários para encher 10 balões?",
+                fragments: [
+                    "1 litro de ar enche 2 balões,",
+                    "então 1 balão precisa de 0,5 litros.",
+                    "Multiplicando esse valor por 10,",
+                    "obtemos que você precisará de 5 litros de ar",
+                    "para encher os 10 balões."
+                ]
+            },
+            {
+                id: 3,
+                question: "Você está preparando suco para sua família. A quantidade de água usada influencia na quantidade de suco preparado. Se 200 mL de água servem 2 pessoas, quantos mL de água são necessários para servir 6 pessoas?",
+                fragments: [
+                    "Se 200 mL de água servem 2 pessoas,",
+                    "multiplicamos por 3 para servir 6 pessoas.",
+                    "Assim, você precisará de 600 mL de água",
+                    "para preparar suco suficiente para 6 pessoas."
+                ]
+            },
+            {
+                id: 4,
+                question: "Você está andando de bicicleta para visitar um amigo e a distância percorrida varia com o tempo que você pedala. Se você pedala por 10 minutos e percorre 3 km, quanto tempo levará para percorrer 9 km mantendo a mesma velocidade?",
+                fragments: [
+                    "Em 10 minutos, você percorre 3 km.",
+                    "Multiplicando o tempo pelo fator 3,",
+                    "encontramos que você levará 30 minutos",
+                    "para percorrer 9 km."
+                ]
+            },
+            {
+                id: 5,
+                question: "Você está trocando figurinhas com seus amigos e o número de figurinhas que você recebe depende do número que você oferece. Se você troca 4 figurinhas e recebe 8 em troca, quantas figurinhas você receberá se trocar 10 figurinhas?",
+                fragments: [
+                    "A relação é de 2 figurinhas ganhas para cada 1 oferecida.",
+                    "Multiplicando 10 figurinhas por 2,",
+                    "determinamos que você receberá 20 figurinhas",
+                    "se trocar 10 figurinhas."
+                ]
+            },
+            {
+                id: 6,
+                question: "Depois de brincar com seus amigos, vocês precisam guardar todos os brinquedos. O tempo necessário para guardar tudo muda conforme o número de pessoas ajudando. Se 2 pessoas levam 30 minutos para guardar todos os brinquedos, quanto tempo será necessário se 5 pessoas ajudarem?",
+                fragments: [
+                    "Multiplicamos o número de pessoas pelo tempo inicial (60 minutos).",
+                    "Depois, dividimos pelo novo número de pessoas.",
+                    "Isso dá que levará 12 minutos",
+                    "para guardar os brinquedos se 5 pessoas ajudarem."
+                ]
+            },
+            {
+                id: 7,
+                question: "Você decidiu encher uma piscina inflável para se divertir no fim de semana. O tempo para encher a piscina varia com o tamanho dela. Se uma piscina pequena é enchida em 20 minutos, quanto tempo levará para encher uma piscina que é o dobro do tamanho?",
+                fragments: [
+                    "Se a piscina é o dobro do tamanho,",
+                    "o tempo necessário também será o dobro.",
+                    "Multiplicando 20 minutos por 2,",
+                    "encontramos que levará 40 minutos",
+                    "para encher a piscina maior."
+                ]
+            },
+            {
+                id: 8,
+                question: "Durante uma festa de aniversário, você e seus amigos estão dividindo um bolo. A quantidade de bolo que cada um recebe muda conforme o número de pessoas que o dividem. Se 4 pessoas dividem o bolo igualmente e cada uma recebe 1/4 do bolo, quanto cada pessoa receberá se o bolo for dividido entre 8 pessoas?",
+                fragments: [
+                    "Se o número de pessoas dobrar,",
+                    "a fração do bolo será metade.",
+                    "Dividimos 1/4 pela metade",
+                    "para encontrar que cada pessoa receberá 1/8 do bolo",
+                    "se 8 pessoas o dividirem igualmente."
+                ]
+            },
+            {
+                id: 9,
+                question: "Você decide correr no parque em uma tarde ensolarada. A quantidade de calorias que você queima muda conforme o tempo que você corre. Se você queima 100 calorias em 15 minutos de corrida, quantas calorias você queimará se correr durante 45 minutos?",
+                fragments: [
+                    "100 calorias são queimadas em 15 minutos.",
+                    "Multiplicando por 3 (para 45 minutos),",
+                    "determinamos que você queimará 300 calorias",
+                    "após correr por 45 minutos."
+                ]
+            },
+            {
+                id: 10,
+                question: "Como parte de um projeto ambiental da escola, você e seus amigos estão plantando árvores em um parque. O número de árvores plantadas varia com o tempo que vocês trabalham. Se vocês plantam 10 árvores em 2 horas, quantas árvores poderão plantar em 5 horas?",
+                fragments: [
+                    "Multiplicamos o número de árvores plantadas",
+                    "pelo fator de aumento do tempo (2,5).",
+                    "Isso dá que vocês conseguirão plantar 25 árvores",
+                    "em 5 horas de trabalho."
+                ]
+            }
+        ];
+
+        function Exercise({ id, question, fragments }) {
+            const [selectedFragments, setSelectedFragments] = React.useState([]);
+            const [result, setResult] = React.useState("");
+            const [showCelebration, setShowCelebration] = React.useState(false);
+            const shuffledFragments = React.useMemo(() => shuffle([...fragments]), [fragments]);
+
+            const handleSelect = (fragment) => {
+                setSelectedFragments([...selectedFragments, fragment]);
+            };
+
+            const handleDeselect = (fragment) => {
+                setSelectedFragments(selectedFragments.filter(f => f !== fragment));
+            };
+
+            const handleCheck = () => {
+                if (JSON.stringify(selectedFragments) === JSON.stringify(fragments)) {
+                    setResult("Correto! Parabéns!");
+                    setShowCelebration(true);
+                    setTimeout(() => setShowCelebration(false), 3000); // Oculta a animação após 3 segundos
+                } else {
+                    setResult("Ordem incorreta. Tente novamente.");
+                }
+            };
+
+            const handleReset = () => {
+                setSelectedFragments([]);
+                setResult("");
+            };
+
+            return (
+                <div className="container">
+                    <h3>Exercício {id}</h3>
+                    <p><strong>Enunciado:</strong> {question}</p>
+                    <p>Clique nas palavras abaixo para formar a frase correta:</p>
+                    <div className="fragments">
+                        {shuffledFragments.map((fragment, index) => (
+                            !selectedFragments.includes(fragment) && (
+                                <div key={index} className="fragment fade-in" onClick={() => handleSelect(fragment)}>
+                                    {fragment}
+                                </div>
+                            )
+                        ))}
+                    </div>
+                    <div className="selected">
+                        {selectedFragments.map((fragment, index) => (
+                            <div key={index} className="selected-fragment fade-in" onClick={() => handleDeselect(fragment)}>
+                                {fragment}
+                            </div>
+                        ))}
+                    </div>
+                    {!showCelebration && <button id="verify" onClick={handleCheck}>Verificar</button>}
+                    <button id="reset" onClick={handleReset}>Reiniciar</button>
+                    {result && <p>{result}</p>}
+                    {showCelebration && <Confetti />}
+                </div>
+            );
+        }
+
+        function App() {
+            return (
+                <div>
+                    {exercises.map(exercise => (
+                        <Exercise key={exercise.id} {...exercise} />
+                    ))}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
